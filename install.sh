@@ -14,82 +14,51 @@ NC='\033[0m' # No Color
 echo -e "${GREEN}🚀 开始安装 Mouse Inverter (鼠标滚轮反转工具)...${NC}"
 
 # 1. 检查环境
-if ! command -v swiftc &> /dev/null; then
-    echo -e "${RED}❌ 未找到 swiftc 编译器。${NC}"
-    echo "请运行 'xcode-select --install' 安装 Xcode Command Line Tools 后重试。"
+if ! command -v xcodegen &> /dev/null; then
+    echo -e "${RED}❌ 未安装 xcodegen，无法编译菜单栏应用。${NC}"
+    echo "   请运行: brew install xcodegen"
     exit 1
 fi
 
-if [ ! -f "$SOURCE_FILE" ]; then
-    echo -e "${RED}❌ 未找到源代码文件: $SOURCE_FILE${NC}"
+# 2. 编译 Menu Bar 应用
+echo ""
+echo -e "${GREEN}🎛️  正在编译菜单栏应用...${NC}"
+cd MouseInverterMenuBar
+xcodegen generate
+
+# 先执行构建（静默输出）
+xcodebuild -project MouseInverter.xcodeproj \
+    -scheme MouseInverter \
+    -configuration Release \
+    -destination "platform=macOS" \
+    build > /dev/null 2>&1
+
+# 然后通过 -showBuildSettings 获取准确路径
+BUILD_PRODUCTS_DIR=$(xcodebuild -project MouseInverter.xcodeproj \
+    -scheme MouseInverter \
+    -configuration Release \
+    -showBuildSettings | grep -m 1 "BUILT_PRODUCTS_DIR" | sed 's/.*= //')/MouseInverter.app
+
+if [ -z "$BUILD_PRODUCTS_DIR" ]; then
+    echo -e "${RED}❌ 构建失败，未找到产物。${NC}"
+    cd ..
     exit 1
 fi
 
-# 2. 编译命令行工具
-echo -e "🔨 正在编译 ${YELLOW}$SOURCE_FILE${NC}..."
-swiftc "$SOURCE_FILE" -o "$APP_NAME"
-if [ $? -ne 0 ]; then
-    echo -e "${RED}❌ 编译失败。请检查源代码。${NC}"
-    exit 1
-fi
+# 安装 Menu Bar 应用
+rm -rf "$HOME/Applications/MouseInverter.app"
+cp -R "$BUILD_PRODUCTS_DIR" "$HOME/Applications/MouseInverter.app"
+echo -e "✅ 菜单栏应用已安装到: $HOME/Applications/MouseInverter.app"
 
-# 3. 编译 Menu Bar 应用
-if [ -d "MouseInverterMenuBar" ]; then
-    echo ""
-    echo -e "${GREEN}🎛️  正在编译菜单栏应用...${NC}"
-    if command -v xcodegen &> /dev/null; then
-        cd MouseInverterMenuBar
-        xcodegen generate
+cd ..
 
-        # 先执行构建（静默输出）
-        xcodebuild -project MouseInverter.xcodeproj \
-            -scheme MouseInverter \
-            -configuration Release \
-            -destination "platform=macOS" \
-            build > /dev/null 2>&1
-
-        # 然后通过 -showBuildSettings 获取准确路径
-        BUILD_PRODUCTS_DIR=$(xcodebuild -project MouseInverter.xcodeproj \
-            -scheme MouseInverter \
-            -configuration Release \
-            -showBuildSettings | grep -m 1 "BUILT_PRODUCTS_DIR" | sed 's/.*= //')/MouseInverter.app
-
-        if [ -z "$BUILD_PRODUCTS_DIR" ]; then
-            echo -e "${RED}❌ 构建失败，未找到产物。${NC}"
-            cd ..
-            rm -f "$APP_NAME"
-            exit 1
-        fi
-
-        # 安装 Menu Bar 应用
-        rm -rf "$HOME/Applications/MouseInverter.app"
-        cp -R "$BUILD_PRODUCTS_DIR" "$HOME/Applications/MouseInverter.app"
-        echo -e "✅ 菜单栏应用已安装到: $HOME/Applications/MouseInverter.app"
-
-        cd ..
-    else
-        echo -e "${RED}❌ 未安装 xcodegen，无法编译菜单栏应用。${NC}"
-        echo "   请运行: brew install xcodegen"
-        rm -f "$APP_NAME"
-        exit 1
-    fi
-fi
-
-# 4. 复制 mouse-inverter 到 Menu Bar 应用内
-echo -e "📂 安装后台服务..."
-cp "$APP_NAME" "$HOME/Applications/MouseInverter.app/Contents/MacOS/$APP_NAME"
-chmod +x "$HOME/Applications/MouseInverter.app/Contents/MacOS/$APP_NAME"
-
-# 5. 清理旧的 launchd 服务
+# 3. 清理旧的 launchd 服务
 PLIST_DEST="$HOME/Library/LaunchAgents/com.vihv.mouse-inverter.plist"
 if [ -f "$PLIST_DEST" ]; then
     echo -e "🧹 清理旧的自启动服务..."
     launchctl bootout gui/$USER_ID "$PLIST_DEST" 2>/dev/null
     rm -f "$PLIST_DEST"
 fi
-
-# 6. 清理临时文件
-rm -f "$APP_NAME"
 
 echo ""
 echo -e "${GREEN}✅ 安装完成！${NC}"
@@ -101,8 +70,8 @@ echo ""
 echo "📱 运行应用:"
 echo "   open $HOME/Applications/MouseInverter.app"
 echo ""
-echo "新架构说明："
-echo "  • 只需运行 MouseInverter.app，无需 launchd"
-echo "  • 菜单栏图标控制后台服务"
-echo "  • 自动崩溃重启机制"
+echo "架构说明："
+echo "  • 单进程 MenuBar 应用，EventTap 服务已集成"
+echo "  • 点击菜单栏图标查看状态和控制"
+echo "  • 无需 launchd，应用启动即自动启用服务"
 
