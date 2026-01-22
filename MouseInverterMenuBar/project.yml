@@ -1,0 +1,36 @@
+name: MouseInverter
+options:
+  bundleIdPrefix: com.vihv
+  deploymentTarget:
+    macOS: "13.0"
+  xcodeVersion: "15.0"
+
+settings:
+  base:
+    SWIFT_VERSION: "5.9"
+    MACOSX_DEPLOYMENT_TARGET: "13.0"
+
+targets:
+  MouseInverter:
+    type: application
+    platform: macOS
+    deploymentTarget: "13.0"
+    sources:
+      - path: .
+        excludes:
+          - "*.xcodeproj"
+          - "*.lproj"
+          - "build"
+    resources:
+      - Assets.xcassets
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.vihv.mouse-inverter
+        INFOPLIST_FILE: Info.plist
+        ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
+        CODE_SIGN_STYLE: Automatic
+        DEVELOPMENT_TEAM: ""
+        PRODUCT_NAME: MouseInverter
+        SUPPORTS_MACCATALYST: NO
+    scheme:
+      testTargets: []

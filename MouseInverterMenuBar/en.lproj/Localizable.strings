@@ -1,0 +1,31 @@
+/*
+  Localizable.strings (English)
+  MouseInverter
+*/
+
+// Status
+"status.running" = "Running";
+"status.starting" = "Starting...";
+"status.scrollInverted" = "Scroll inverted";
+"status.startingService" = "Starting service...";
+
+// Buttons
+"button.restart" = "Restart";
+"button.quit" = "Quit";
+"button.viewLogs" = "View Logs";
+"button.hideLogs" = "Hide Logs";
+
+// Description
+"desc.feature" = "Invert mouse scroll\nKeep trackpad natural";
+
+// Logs
+"logs.title" = "Service Logs:";
+
+// Errors
+"error.startFailed" = "Start failed";
+
+// Language
+"language.current" = "Language";
+"language.zh" = "中文";
+"language.en" = "English";
+"language.auto" = "Auto (System)";
