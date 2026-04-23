@@ -8,6 +8,7 @@
 
 import Foundation
 import SwiftUI
+import ApplicationServices
 
 /// 应用状态管理类
 class AppState: ObservableObject {
@@ -27,8 +28,24 @@ class AppState: ObservableObject {
     private var isRestarting = false
 
     init() {
-        // 自动启动服务
-        startService()
+        // 检查并请求辅助功能权限
+        checkAccessibilityPermission()
+    }
+
+    /// 检查辅助功能权限
+    private func checkAccessibilityPermission() {
+        let options = [kAXTrustedCheckOptionPrompt.takeUnretainedValue() as String: true]
+        let trusted = AXIsProcessTrustedWithOptions(options as CFDictionary)
+
+        if trusted {
+            startService()
+        } else {
+            // 用户取消授权或许可证未授予
+            DispatchQueue.main.async {
+                self.errorMessage = "需要辅助功能权限才能工作"
+                self.isRunning = false
+            }
+        }
     }
 
     /// 启动服务
@@ -48,6 +65,16 @@ class AppState: ObservableObject {
         // 防止重复点击
         guard !isRestarting else { return }
 
+        // 检查权限
+        let options = [kAXTrustedCheckOptionPrompt.takeUnretainedValue() as String: false]
+        let trusted = AXIsProcessTrustedWithOptions(options as CFDictionary)
+
+        guard trusted else {
+            // 权限未授予，重新请求
+            checkAccessibilityPermission()
+            return
+        }
+
         isRestarting = true
         isLoading = true
 
@@ -60,7 +87,7 @@ class AppState: ObservableObject {
             self.isRunning = success
 
             if !success {
-                self.errorMessage = "重启失败，请检查辅助功能权限"
+                self.errorMessage = "启动失败，请检查辅助功能权限"
             } else {
                 self.errorMessage = nil
             }

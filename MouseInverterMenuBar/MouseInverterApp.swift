@@ -17,6 +17,5 @@ struct MouseInverterApp: App {
             ContentView()
                 .environmentObject(appState)
         }
-        .menuBarExtraStyle(.window)
     }
 }
